@@ -1,0 +1,152 @@
+﻿
+@model LoginModel
+
+
+@{
+    ViewData["Title"] = "Личный кабинет";
+}
+
+<body>
+    <h1>@ViewData["Title"]</h1>
+    <div class="row">
+        <div class="col-md-4">
+            <section>
+                <form id="account" method="post">
+                    <h4>Use a local account to log in.</h4>
+                    <hr />
+                    <div asp-validation-summary="All" class="text-danger"></div>
+                    <div class="form-group">
+                        <label asp-for="Email"></label>
+                        <input asp-for="Email" class="form-control" />
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Password"></label>
+                        <input asp-for="Password" class="form-control" />
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox">
+                            <label asp-for="RememberMe">
+                                <input id="rememberMe" asp-for="RememberMe" />
+                                @Html.DisplayNameFor(m => m.RememberMe)
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">Log in</button>
+                    </div>
+                    <div class="form-group">
+                        <button type="button" name="PhoneFormShow" class="btn btn-primary" onclick="showObject(wb_FormPhone)">Вход через мобильный телефон</button>
+                    </div>
+                    <div class="form-group">
+                        <p>
+                            @*<a id="forgot-password" asp-page="./ForgotPassword">Forgot your password?</a>*@
+                        </p>
+                        <p>
+                            <a class="btn btn-primary" asp-controller="Account" asp-action="Register">Register as a new user</a>
+                        </p>
+                    </div>
+                </form>
+            </section>
+        </div>
+    </div>
+
+    <div id="wb_FormPhone" style="visibility:hidden">
+        <form id="phone" method="post">
+            <h4>Введите номер телефона.</h4>
+            <hr />
+            <div asp-validation-summary="All" class="text-danger"></div>
+            <div class="form-group">
+                <input type="text" id="phoneNumber" name="phoneNumber" asp-for="PhoneNumber" class="form-control" />
+                <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+            </div>
+        
+        <div class="form-group">
+            <button type="button" id="sendSMS" class="btn btn-primary">Отправить СМС-код</button>
+        </div>
+
+        <p id="timer"></p>
+
+        <h4>Введите код подтверждения.</h4>
+        <div class="form-group">
+            <input id="enteredCode" type="text" name="enteredCode" asp-for="EnterCode" class="form-control" />
+        </div>
+
+        <div class="form-group">
+            <button id="loginByPhone" type="button" class="btn btn-primary">Подтвердить</button>
+        </div>
+        </form>
+    </div>
+
+    <script>
+        function showObject(obj) {
+            obj.style.visibility = "VISIBLE";
+        }
+
+        $(document).ready(function () {
+            $('#sendSMS').click(function () {
+                var phoneNumber = $('#phoneNumber').val();
+                $.ajax({
+                    url: '@Url.ActionLink("SendMessage", "Account")',
+                    data: {
+                        ph:JSON.stringify(phoneNumber)
+                    },
+                    dataType: "json",
+                    contentType: "application/json; charset=utf-8"
+                });
+
+                // Set the date we're counting down to
+                var countDownDate = new Date().getTime() + (1000*60*2);
+                // Update the count down every 1 second
+                var x = setInterval(function() {
+                    // Get today's date and time
+                    var now = new Date().getTime();
+                    var distance = countDownDate - now;
+                    var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                    document.getElementById("timer").innerHTML = "Время до повторной отправки: " + minutes + ":" + seconds;
+                    var bt = document.getElementById("sendSMS");
+                    bt.disabled = true;
+
+                    // If the count down is over, write some text
+                    if (distance < 0) {
+                        clearInterval(x);
+                        document.getElementById("timer").innerHTML = "Можно отправить СМС снова";
+                        bt.disabled = false;
+                    }
+                }, 1000);
+            })
+        })
+
+        $(document).ready(function () {
+            $('#loginByPhone').click(function () {
+                var enteredCode = $('#enteredCode').val();
+                var phoneNumber = $('#phoneNumber').val();
+                var rememberMe = $('#rememberMe').val();
+                $.ajax({
+                    url: '@Url.ActionLink("LoginByPhone", "Account")',
+                    type: 'POST',
+                    data: {
+                        eCode: enteredCode,
+                        pNumber: phoneNumber,
+                        rMe: rememberMe
+                    },
+                    dataType: "json",
+                    contentType: "application/json; charset=utf-8",
+                    success: function (result) {
+                        if (result != null) {
+                            document.getElementById("timer").innerHTML = result /*+ " " document.getElementById("timer").innerHTML*/;
+                        }
+                    } 
+                });
+            });
+        });
+    </script>
+</body>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+
